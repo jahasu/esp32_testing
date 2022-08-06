@@ -18,6 +18,7 @@ list(APPEND srsc
     "remote_log/remote_log.c"
     "remote_log/remote_log_udp.c"
     "remote_log/remote_log_uart.c"
+    "remote_log/remote_log_common.c"
 )
 
 
