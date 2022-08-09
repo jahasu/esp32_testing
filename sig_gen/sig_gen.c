@@ -25,7 +25,7 @@ static void _timer_cb(void* arg)
 }
 
 
-void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, callback_enable_t cb_enable, uint16_t cb_interval_ms)
+void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, endianess_t endianess, callback_enable_t cb_enable, uint16_t cb_interval_ms)
 {
     sig_gen_config_t cfg = {
         .gen_source = SINE_LUT,
@@ -33,7 +33,8 @@ void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, ca
         .sample_rate = sample_rate,
         .bytes_per_sample = bits,
         .enable_cb = cb_enable,
-        .cb_interval = cb_interval_ms
+        .cb_interval = cb_interval_ms,
+        .endianess = endianess
     };
     sig_gen_init(&L_sig, &cfg);
     sig_gen_init(&R_sig, &cfg);
