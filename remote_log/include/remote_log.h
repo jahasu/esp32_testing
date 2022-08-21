@@ -5,6 +5,8 @@
 #include <string.h>
 #include "esp_err.h"
 
+#include "remote_log_common.h"
+
 
 #define MAX_LOGS 10
 #define MAX_DATA_SIZE 100
@@ -74,3 +76,6 @@ esp_err_t remote_log_register_log(remote_log_register_t log);
 
 esp_err_t remote_log_register_event(remote_log_event_register_t event);
 esp_err_t remote_log_record_event(uint8_t event_id);
+
+void remote_log_common_init(uint8_t tx_pin, uint8_t rx_pin);
+void remote_log_common_add(remote_log_common_t type, uint8_t log_id, void *param);

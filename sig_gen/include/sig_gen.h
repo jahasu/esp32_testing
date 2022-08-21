@@ -69,5 +69,5 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg);
 size_t sig_gen_output( sig_gen_t *sg, uint8_t *out_data, size_t samples);
 size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_data, size_t samples);
 
-void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, callback_enable_t cb_enable, uint16_t cb_interval_ms);
+void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, endianess_t endianess, callback_enable_t cb_enable, uint16_t cb_interval_ms);
 void sig_gen_ez_read(uint8_t *out_data, size_t samples, size_t *bytes_read);
