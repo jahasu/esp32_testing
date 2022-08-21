@@ -128,7 +128,7 @@ void code_timer_take_timestamp(code_timer_t *ct, char *tag)
             _ct_add(ct,timing);
             if(ct->_idx >= ct->size_trigger) {
                 ct->active = false;
-                code_timer_print_timestamps(ct);
+                code_timer_print_timestamps(ct, 0);
             }
         }
     }
@@ -137,8 +137,11 @@ void code_timer_take_timestamp(code_timer_t *ct, char *tag)
 /*
 Creates a freeRTOS task to print the timestamps
 */
-void code_timer_print_timestamps(code_timer_t *ct)
+void code_timer_print_timestamps(code_timer_t *ct, size_t number)
 {
+    if(number!=0) {
+        ct->size_trigger = number;
+    }
     xTaskCreatePinnedToCore(_code_timer_print_task,"code_timer print",8192,ct,10,NULL,APP_CPU_NUM);
 }
 

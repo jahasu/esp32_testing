@@ -38,6 +38,6 @@ void code_timer_disable_all(void);
 void code_timer_activate(code_timer_t *ct);
 void code_timer_deactivate(code_timer_t *ct);
 void code_timer_take_timestamp(code_timer_t *ct, char *tag);
-void code_timer_print_timestamps(code_timer_t *ct);
+void code_timer_print_timestamps(code_timer_t *ct, size_t number);
 
 void code_timer_enable_global(size_t size);
