@@ -20,7 +20,8 @@ typedef enum {
 
 typedef enum {
     SIG_GEN_16BIT = 2,
-    SIG_GEN_24BIT = 3
+    SIG_GEN_24BIT = 3,
+    SIG_GEN_24_32BIT = 4
 } bytes_per_sample_t;
 
 typedef enum {
