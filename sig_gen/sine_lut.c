@@ -75,36 +75,36 @@ void lut_gen_init(lut_gen_t *lsg, lut_freq_e freq)
     switch (freq) {
         case LUT_FREQ_1K:
             lsg->lut = sine_lut_1k;
-            lsg->lut_size = sizeof(sine_lut_1k)/4;
+            lsg->lut_size = sizeof(sine_lut_1k)/sizeof(sine_lut_1k[0]);
             break;
         case LUT_FREQ_1K3:
             lsg->lut = sine_lut_1k3;
-            lsg->lut_size = sizeof(sine_lut_1k3)/4;
+            lsg->lut_size = sizeof(sine_lut_1k3)/sizeof(sine_lut_1k3[0]);
             break;
         case LUT_FREQ_440:
             lsg->lut = sine_lut_440;
-            lsg->lut_size = sizeof(sine_lut_440)/4;
+            lsg->lut_size = sizeof(sine_lut_440)/sizeof(sine_lut_440[0]);
             break;
         case LUT_FREQ_552:
             lsg->lut = sine_lut_552;
-            lsg->lut_size = sizeof(sine_lut_552)/4;
+            lsg->lut_size = sizeof(sine_lut_552)/sizeof(sine_lut_552[0]);
             break;
         case LUT_FREQ_5K3:
             lsg->lut = sine_lut_5k3;
-            lsg->lut_size = sizeof(sine_lut_5k3)/4;
+            lsg->lut_size = sizeof(sine_lut_5k3)/sizeof(sine_lut_5k3[0]);
             break;
         case LUT_TEST_A:
             lsg->lut = sine_lut_TEST_A;
-            lsg->lut_size = sizeof(sine_lut_TEST_A)/4;
+            lsg->lut_size = sizeof(sine_lut_TEST_A)/sizeof(sine_lut_TEST_A[0]);
             break;
         case LUT_TEST_B:
             lsg->lut = sine_lut_TEST_B;
-            lsg->lut_size = sizeof(sine_lut_TEST_B)/4;
+            lsg->lut_size = sizeof(sine_lut_TEST_B)/sizeof(sine_lut_TEST_B[0]);
             break;
 
         default:
             lsg->lut = sine_lut_1k;
-            lsg->lut_size = sizeof(sine_lut_1k)/4;
+            lsg->lut_size = sizeof(sine_lut_1k)/sizeof(sine_lut_1k[0]);
             break;
     }
     lsg->pos = 0;

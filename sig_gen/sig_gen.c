@@ -10,7 +10,7 @@
 #include "freertos/queue.h"
 
 
-static const char *SIG_TAG = "sigGen";
+static const char *TAG = "sigGen";
 sig_gen_t L_sig;
 sig_gen_t R_sig;
 
@@ -60,11 +60,11 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
     if(sg->gen_source == SINE_LUT) {
         sg->lut_gen = (lut_gen_t *)malloc(sizeof(lut_gen_t));
         lut_gen_init(sg->lut_gen, sg->lut_freq);
-        ESP_LOGI(SIG_TAG,"Signal Generator Initialized. LUT#%d. LUT size: %d. Bytes/sample: %d. Freq: %f", sg->lut_freq, sg->lut_gen->lut_size, sg->bytes_per_sample, (float)(sg->sample_rate)/(sg->lut_gen->lut_size));
+        ESP_LOGI(TAG,"Signal Generator Initialized. LUT#%d. LUT size: %d. Bytes/sample: %d. Freq: %f", sg->lut_freq, sg->lut_gen->lut_size, sg->bytes_per_sample, (float)(sg->sample_rate)/(sg->lut_gen->lut_size));
     }
     // Generate signal from calculation
     else {
-        ESP_LOGI(SIG_TAG,"Signal Generator Initialized. sampleRate:%d, ampl:%f, freq:%f, deltaT:%f, phase:%f", sg->sample_rate,sg->_amplitude,sg->_freq,sg->_deltaTime,sg->_phase);
+        ESP_LOGI(TAG,"Signal Generator Initialized. sampleRate:%d, ampl:%f, freq:%f, deltaT:%f, phase:%f", sg->sample_rate,sg->_amplitude,sg->_freq,sg->_deltaTime,sg->_phase);
     }
     // Spawn timer task to drive callback
     if(!timer_initialized) {
@@ -77,11 +77,11 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
             esp_timer_handle_t periodic_timer;
             ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
             esp_timer_start_periodic(periodic_timer, cfg->cb_interval*1000);        
-            ESP_LOGI(SIG_TAG, "Periodic audio callback started. Interval: %d ms", cfg->cb_interval);
+            ESP_LOGI(TAG, "Periodic audio callback started. Interval: %d ms", cfg->cb_interval);
 
             xTaskSem = xSemaphoreCreateBinary();
             if( xTaskSem != NULL ) {
-                ESP_LOGD(SIG_TAG, "Semaphore created");
+                ESP_LOGD(TAG, "Semaphore created");
             }
             timer_initialized = 1;
         }
@@ -92,25 +92,22 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
 // Calculate or look up sine sample
 uint32_t _sig_gen_get_sample(sig_gen_t *sg)
 {
-    switch (sg->gen_source) {
-        case SINE_LUT:
-            return lut_gen_get_sample(sg->lut_gen);
-
-        case SINE_CALC: {
-                double angle = sg->_double_pi * sg->_freq * sg->_time + sg->_phase;
-                double result = sg->_amplitude * sin(angle);
-                sg->_time += sg->_deltaTime;
-                // ESP_LOGI("sample","%.6x",(uint32_t)result);
-                return (uint32_t)result;
-            }
-        case WHITE_NOISE: {
-            return esp_random();
-        }
-
-        default:
-            ESP_LOGE(SIG_TAG,"Signal Generator Error - no generator source selected");
-            return 0;
-    }   
+    if(sg->gen_source == SINE_LUT) {
+        return lut_gen_get_sample(sg->lut_gen);
+    }
+    else if(sg->gen_source == SINE_CALC) {
+        double angle = sg->_double_pi * sg->_freq * sg->_time + sg->_phase;
+        double result = sg->_amplitude * sin(angle);
+        sg->_time += sg->_deltaTime;
+        return (uint32_t)result;
+    }
+    else if(sg->gen_source == WHITE_NOISE) {
+        return esp_random();
+    }
+    else {
+        ESP_LOGE(TAG,"Signal Generator Error - no generator source selected: [%d]", sg->gen_source);
+        return 0;
+    } 
 }
 
 // Outputs a mono sine
@@ -118,7 +115,7 @@ uint32_t _sig_gen_get_sample(sig_gen_t *sg)
 size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
 {
     if(!sg->initialized) {
-        ESP_LOGE(SIG_TAG, "ERROR: Signal generator not initialized!");
+        ESP_LOGE(TAG, "ERROR: Signal generator not initialized!");
         return 0;
     }
 
@@ -126,7 +123,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
     if(L_sig.cb_enabled | R_sig.cb_enabled) {
         if(xTaskSem != NULL) {
             if(xSemaphoreTake(xTaskSem, pdMS_TO_TICKS(1000)) != pdTRUE) {
-                ESP_LOGE(SIG_TAG, "ERROR: No callback received");
+                ESP_LOGE(TAG, "ERROR: No callback received");
                 return 0;
             }
         }
@@ -135,7 +132,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
     size_t out_index = 0;
     
     switch (sg->bytes_per_sample) {
-        case 2: // 16bit LE
+        case SIG_GEN_16BIT: // 16bit LE
             if(sg->endianess == SIG_GEN_LE) {
                 for(int i=0;i<samples;i++) {
                     uint16_t sample = (uint16_t)(_sig_gen_get_sample(sg)>>8);
@@ -152,7 +149,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
             }
             break;
         
-        case 3: // 24bit LE
+        case SIG_GEN_24BIT: // 24bit LE
             if(sg->endianess == SIG_GEN_LE) {
                 for(int i=0;i<samples;i++) {
                     uint32_t sample = _sig_gen_get_sample(sg);
@@ -171,7 +168,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
             }
             break;
 
-        case 4: // 24/32bit LE
+        case SIG_GEN_24_32BIT: // 24/32bit LE
             if(sg->endianess == SIG_GEN_LE) {
                 for(int i=0;i<samples;i++) {
                     uint32_t sample = _sig_gen_get_sample(sg);
@@ -194,7 +191,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
         
         
         default:
-            ESP_LOGE(SIG_TAG,"ERROR: bytes per sample %d", sg->bytes_per_sample);
+            ESP_LOGE(TAG,"ERROR: bytes per sample %d", sg->bytes_per_sample);
             break;
         }
     return out_index;
@@ -204,7 +201,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
 size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_data, size_t samples)
 {
     if((!sg_l->initialized) | (!sg_r->initialized)) {
-        ESP_LOGE(SIG_TAG, "ERROR: Signal generator not initialized!");
+        ESP_LOGE(TAG, "ERROR: Signal generator not initialized!");
         return 0;
     }
 
@@ -212,19 +209,25 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
     if(L_sig.cb_enabled | R_sig.cb_enabled) {
         if(xTaskSem != NULL) {
             if(xSemaphoreTake(xTaskSem, pdMS_TO_TICKS(1000)) != pdTRUE) {
-                ESP_LOGE(SIG_TAG, "ERROR: No callback received");
+                ESP_LOGE(TAG, "ERROR: No callback received");
                 return 0;
             }
         }
     }
 
-    uint8_t bps_combined = sg_l->bytes_per_sample | sg_r->bytes_per_sample;
-    uint8_t end_combined = sg_l->endianess | sg_r->endianess;
-    // TODO test for valid (equal) bps and end settings in both channels
+    if(sg_l->bytes_per_sample != sg_r->bytes_per_sample) {
+        sg_r->bytes_per_sample = sg_l->bytes_per_sample;
+    }
+    if(sg_l->endianess != sg_r->endianess) {
+        sg_r->endianess = sg_l->endianess;
+    }
+
+    uint8_t bps_combined = sg_l->bytes_per_sample;
+    uint8_t end_combined = sg_l->endianess;
     size_t out_index = 0;
 
     switch (bps_combined) {
-        case 2: // 16bit LE
+        case SIG_GEN_16BIT: // 16bit LE
             if(end_combined == SIG_GEN_LE) {
                 uint16_t l_sample;
                 uint16_t r_sample;
@@ -259,7 +262,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
             }
             break;
         
-        case 3: // 24bit LE
+        case SIG_GEN_24BIT: // 24bit LE
             if(end_combined == SIG_GEN_LE) {
                 uint32_t l_sample;
                 uint32_t r_sample;
@@ -300,7 +303,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
             }
             break;
 
-        case 4: // 24/32bit LE
+        case SIG_GEN_24_32BIT: // 24/32bit LE
             if(end_combined == SIG_GEN_LE) {
                 uint32_t l_sample;
                 uint32_t r_sample;
@@ -311,15 +314,15 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     
                     // l
                     out_data[out_index++] = (l_sample >> 24) & 0xff;
-                    out_data[out_index++] = (l_sample & 0xff);
-                    out_data[out_index++] = (l_sample >> 8) & 0xff;
                     out_data[out_index++] = (l_sample >> 16) & 0xff;
+                    out_data[out_index++] = (l_sample >> 8) & 0xff;
+                    out_data[out_index++] = (l_sample & 0xff);
 
                     // r
                     out_data[out_index++] = (r_sample >> 24) & 0xff;
-                    out_data[out_index++] = (r_sample & 0xff);
-                    out_data[out_index++] = (r_sample >> 8) & 0xff;
                     out_data[out_index++] = (r_sample >> 16) & 0xff;
+                    out_data[out_index++] = (r_sample >> 8) & 0xff;
+                    out_data[out_index++] = (r_sample & 0xff);
                 }
             }
             else { // BE
@@ -332,21 +335,21 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     
                     // l
                     out_data[out_index++] = (l_sample & 0xff);
-                    out_data[out_index++] = (l_sample >> 24) & 0xff;
-                    out_data[out_index++] = (l_sample >> 16) & 0xff;
                     out_data[out_index++] = (l_sample >> 8) & 0xff;
+                    out_data[out_index++] = (l_sample >> 16) & 0xff;
+                    out_data[out_index++] = (l_sample >> 24) & 0xff;
 
                     // r
                     out_data[out_index++] = (r_sample & 0xff);
-                    out_data[out_index++] = (r_sample >> 24) & 0xff;
-                    out_data[out_index++] = (r_sample >> 16) & 0xff;
                     out_data[out_index++] = (r_sample >> 8) & 0xff;
+                    out_data[out_index++] = (r_sample >> 16) & 0xff;
+                    out_data[out_index++] = (r_sample >> 24) & 0xff;
                 }
             }
             break;
 
         default:
-            ESP_LOGE(SIG_TAG,"bytes per sample L; %d // bytes per sample R; %d", sg_l->bytes_per_sample, sg_r->bytes_per_sample);
+            ESP_LOGE(TAG,"bytes per sample L; %d // bytes per sample R; %d", sg_l->bytes_per_sample, sg_r->bytes_per_sample);
             break;
     }
 
@@ -356,7 +359,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
 void sig_gen_ez_read(uint8_t *out_data, size_t samples, size_t *bytes_read)
 {
     if((!L_sig.initialized) | (!R_sig.initialized)) {
-        ESP_LOGE(SIG_TAG, "ERROR: Signal generator not initialized!");
+        ESP_LOGE(TAG, "ERROR: Signal generator not initialized!");
         return;
     }
 
