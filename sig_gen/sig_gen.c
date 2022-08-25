@@ -40,6 +40,17 @@ void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, en
     sig_gen_init(&R_sig, &cfg);
 }
 
+void sig_gen_ez_read(uint8_t *out_data, size_t samples, size_t *bytes_read)
+{
+    if((!L_sig.initialized) | (!R_sig.initialized)) {
+        ESP_LOGE(TAG, "ERROR: Signal generator not initialized!");
+        return;
+    }
+
+    size_t bytes = sig_gen_output_combine(&L_sig, &R_sig, out_data, samples);
+    *bytes_read = bytes;
+}
+
 void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
 {
     sg->gen_source = cfg->gen_source;
@@ -354,15 +365,4 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
     }
 
     return out_index;
-}
-
-void sig_gen_ez_read(uint8_t *out_data, size_t samples, size_t *bytes_read)
-{
-    if((!L_sig.initialized) | (!R_sig.initialized)) {
-        ESP_LOGE(TAG, "ERROR: Signal generator not initialized!");
-        return;
-    }
-
-    size_t bytes = sig_gen_output_combine(&L_sig, &R_sig, out_data, samples);
-    *bytes_read = bytes;
 }
