@@ -87,7 +87,7 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
             };
             esp_timer_handle_t periodic_timer;
             ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
-            esp_timer_start_periodic(periodic_timer, cfg->cb_interval*1000);        
+            esp_timer_start_periodic(periodic_timer, cfg->cb_interval*1000);
             ESP_LOGI(TAG, "Periodic audio callback started. Interval: %d ms", cfg->cb_interval);
 
             xTaskSem = xSemaphoreCreateBinary();
@@ -118,7 +118,7 @@ uint32_t _sig_gen_get_sample(sig_gen_t *sg)
     else {
         ESP_LOGE(TAG,"Signal Generator Error - no generator source selected: [%d]", sg->gen_source);
         return 0;
-    } 
+    }
 }
 
 // Outputs a mono sine
@@ -141,7 +141,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
     }
 
     size_t out_index = 0;
-    
+
     switch (sg->bytes_per_sample) {
         case SIG_GEN_16BIT: // 16bit LE
             if(sg->endianess == SIG_GEN_LE) {
@@ -159,7 +159,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
                 }
             }
             break;
-        
+
         case SIG_GEN_24BIT: // 24bit LE
             if(sg->endianess == SIG_GEN_LE) {
                 for(int i=0;i<samples;i++) {
@@ -199,8 +199,8 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
                 }
             }
             break;
-        
-        
+
+
         default:
             ESP_LOGE(TAG,"ERROR: bytes per sample %d", sg->bytes_per_sample);
             break;
@@ -249,10 +249,10 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     // Combine l & r
                     uint32_t lr_combined = (l_sample<<16)|(r_sample & 0xffff);
 
-                    out_data[out_index++] = (lr_combined >> 16) & 0xff;
                     out_data[out_index++] = (lr_combined >> 24) & 0xff;
-                    out_data[out_index++] = (lr_combined & 0xff);
+                    out_data[out_index++] = (lr_combined >> 16) & 0xff;
                     out_data[out_index++] = (lr_combined >> 8) & 0xff;
+                    out_data[out_index++] = (lr_combined & 0xff);
                 }
             }
             else { // BE
@@ -265,14 +265,14 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     // Combine l & r
                     uint32_t lr_combined = (l_sample<<16)|(r_sample & 0xffff);
 
-                    out_data[out_index++] = (lr_combined >> 24) & 0xff;
                     out_data[out_index++] = (lr_combined >> 16) & 0xff;
-                    out_data[out_index++] = (lr_combined >> 8) & 0xff;
+                    out_data[out_index++] = (lr_combined >> 24) & 0xff;
                     out_data[out_index++] = (lr_combined & 0xff);
+                    out_data[out_index++] = (lr_combined >> 8) & 0xff;
                 }
             }
             break;
-        
+
         case SIG_GEN_24BIT: // 24bit LE
             if(end_combined == SIG_GEN_LE) {
                 uint32_t l_sample;
@@ -281,16 +281,16 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 for(int i=0;i<samples;i++) {
                     l_sample = _sig_gen_get_sample(sg_l);
                     r_sample = _sig_gen_get_sample(sg_r);
-                    
+
                     // l
-                    out_data[out_index++] = (l_sample & 0xff);
-                    out_data[out_index++] = (l_sample >> 8) & 0xff;
                     out_data[out_index++] = (l_sample >> 16) & 0xff;
+                    out_data[out_index++] = (l_sample >> 8) & 0xff;
+                    out_data[out_index++] = (l_sample & 0xff);
 
                     // r
-                    out_data[out_index++] = (r_sample & 0xff);
-                    out_data[out_index++] = (r_sample >> 8) & 0xff;
                     out_data[out_index++] = (r_sample >> 16) & 0xff;
+                    out_data[out_index++] = (r_sample >> 8) & 0xff;
+                    out_data[out_index++] = (r_sample & 0xff);
                 }
             }
             else { // BE
@@ -300,16 +300,16 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 for(int i=0;i<samples;i++) {
                     l_sample = _sig_gen_get_sample(sg_l);
                     r_sample = _sig_gen_get_sample(sg_r);
-                    
+
                     // l
-                    out_data[out_index++] = (l_sample >> 16) & 0xff;
-                    out_data[out_index++] = (l_sample >> 8) & 0xff;
                     out_data[out_index++] = (l_sample & 0xff);
+                    out_data[out_index++] = (l_sample >> 8) & 0xff;
+                    out_data[out_index++] = (l_sample >> 16) & 0xff;
 
                     // r
-                    out_data[out_index++] = (r_sample >> 16) & 0xff;
-                    out_data[out_index++] = (r_sample >> 8) & 0xff;
                     out_data[out_index++] = (r_sample & 0xff);
+                    out_data[out_index++] = (r_sample >> 8) & 0xff;
+                    out_data[out_index++] = (r_sample >> 16) & 0xff;
                 }
             }
             break;
@@ -322,7 +322,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 for(int i=0;i<samples;i++) {
                     l_sample = _sig_gen_get_sample(sg_l);
                     r_sample = _sig_gen_get_sample(sg_r);
-                    
+
                     // l
                     out_data[out_index++] = (l_sample >> 24) & 0xff;
                     out_data[out_index++] = (l_sample >> 16) & 0xff;
@@ -343,7 +343,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 for(int i=0;i<samples;i++) {
                     l_sample = _sig_gen_get_sample(sg_l);
                     r_sample = _sig_gen_get_sample(sg_r);
-                    
+
                     // l
                     out_data[out_index++] = (l_sample & 0xff);
                     out_data[out_index++] = (l_sample >> 8) & 0xff;
