@@ -9,8 +9,7 @@
 #include "freertos/semphr.h"
 #include "freertos/queue.h"
 
-
-static const char *TAG = "sigGen";
+static const char *TAG = "sig_gen";
 sig_gen_t L_sig;
 sig_gen_t R_sig;
 
@@ -24,31 +23,35 @@ static void _timer_cb(void* arg)
     }
 }
 
-
-void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, endianess_t endianess, callback_enable_t cb_enable, uint16_t cb_interval_ms)
+void sig_gen_stereo_init(sig_gen_stereo_config_t* stereo_config)
 {
     sig_gen_config_t cfg = {
         .gen_source = SINE_LUT,
-        .lut_freq = LUT_FREQ_1K,
-        .sample_rate = sample_rate,
-        .bytes_per_sample = bits,
-        .enable_cb = cb_enable,
-        .cb_interval = cb_interval_ms,
-        .endianess = endianess
+        .lut_freq = stereo_config->left_sine_freq,
+        .sample_rate = stereo_config->sample_rate,
+        .bytes_per_sample = stereo_config->bytes_per_sample,
+        .enable_cb = stereo_config->cb_enable,
+        .cb_interval = stereo_config->cb_interval_ms,
+        .endianess = stereo_config->endianess
     };
     sig_gen_init(&L_sig, &cfg);
+    cfg.lut_freq = stereo_config->right_sine_freq;
     sig_gen_init(&R_sig, &cfg);
 }
 
-void sig_gen_ez_read(uint8_t *out_data, size_t samples, size_t *bytes_read)
+esp_err_t sig_gen_stereo_read(uint8_t *out_data, size_t size, size_t *bytes_read)
 {
     if((!L_sig.initialized) | (!R_sig.initialized)) {
         ESP_LOGE(TAG, "ERROR: Signal generator not initialized!");
-        return;
+        return ESP_FAIL;
     }
+
+    size_t samples = size / (L_sig.bytes_per_sample * 2); // 2 channels
 
     size_t bytes = sig_gen_output_combine(&L_sig, &R_sig, out_data, samples);
     *bytes_read = bytes;
+
+    return ESP_OK;
 }
 
 void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
@@ -87,7 +90,7 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
             };
             esp_timer_handle_t periodic_timer;
             ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
-            esp_timer_start_periodic(periodic_timer, cfg->cb_interval*1000);        
+            esp_timer_start_periodic(periodic_timer, cfg->cb_interval*1000);
             ESP_LOGI(TAG, "Periodic audio callback started. Interval: %d ms", cfg->cb_interval);
 
             xTaskSem = xSemaphoreCreateBinary();
@@ -118,7 +121,7 @@ uint32_t _sig_gen_get_sample(sig_gen_t *sg)
     else {
         ESP_LOGE(TAG,"Signal Generator Error - no generator source selected: [%d]", sg->gen_source);
         return 0;
-    } 
+    }
 }
 
 // Outputs a mono sine
@@ -141,7 +144,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
     }
 
     size_t out_index = 0;
-    
+
     switch (sg->bytes_per_sample) {
         case SIG_GEN_16BIT: // 16bit LE
             if(sg->endianess == SIG_GEN_LE) {
@@ -159,7 +162,7 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
                 }
             }
             break;
-        
+
         case SIG_GEN_24BIT: // 24bit LE
             if(sg->endianess == SIG_GEN_LE) {
                 for(int i=0;i<samples;i++) {
@@ -199,8 +202,8 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
                 }
             }
             break;
-        
-        
+
+
         default:
             ESP_LOGE(TAG,"ERROR: bytes per sample %d", sg->bytes_per_sample);
             break;
@@ -272,7 +275,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 }
             }
             break;
-        
+
         case SIG_GEN_24BIT: // 24bit LE
             if(end_combined == SIG_GEN_LE) {
                 uint32_t l_sample;
@@ -281,7 +284,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 for(int i=0;i<samples;i++) {
                     l_sample = _sig_gen_get_sample(sg_l);
                     r_sample = _sig_gen_get_sample(sg_r);
-                    
+
                     // l
                     out_data[out_index++] = (l_sample & 0xff);
                     out_data[out_index++] = (l_sample >> 8) & 0xff;
@@ -300,7 +303,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 for(int i=0;i<samples;i++) {
                     l_sample = _sig_gen_get_sample(sg_l);
                     r_sample = _sig_gen_get_sample(sg_r);
-                    
+
                     // l
                     out_data[out_index++] = (l_sample >> 16) & 0xff;
                     out_data[out_index++] = (l_sample >> 8) & 0xff;
@@ -322,7 +325,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 for(int i=0;i<samples;i++) {
                     l_sample = _sig_gen_get_sample(sg_l);
                     r_sample = _sig_gen_get_sample(sg_r);
-                    
+
                     // l
                     out_data[out_index++] = (l_sample >> 24) & 0xff;
                     out_data[out_index++] = (l_sample >> 16) & 0xff;
@@ -343,7 +346,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 for(int i=0;i<samples;i++) {
                     l_sample = _sig_gen_get_sample(sg_l);
                     r_sample = _sig_gen_get_sample(sg_r);
-                    
+
                     // l
                     out_data[out_index++] = (l_sample & 0xff);
                     out_data[out_index++] = (l_sample >> 8) & 0xff;
