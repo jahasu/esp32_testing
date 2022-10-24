@@ -252,10 +252,10 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     // Combine l & r
                     uint32_t lr_combined = (l_sample<<16)|(r_sample & 0xffff);
 
-                    out_data[out_index++] = (lr_combined >> 16) & 0xff;
                     out_data[out_index++] = (lr_combined >> 24) & 0xff;
-                    out_data[out_index++] = (lr_combined & 0xff);
+                    out_data[out_index++] = (lr_combined >> 16) & 0xff;
                     out_data[out_index++] = (lr_combined >> 8) & 0xff;
+                    out_data[out_index++] = (lr_combined & 0xff);
                 }
             }
             else { // BE
@@ -268,10 +268,10 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     // Combine l & r
                     uint32_t lr_combined = (l_sample<<16)|(r_sample & 0xffff);
 
-                    out_data[out_index++] = (lr_combined >> 24) & 0xff;
                     out_data[out_index++] = (lr_combined >> 16) & 0xff;
-                    out_data[out_index++] = (lr_combined >> 8) & 0xff;
+                    out_data[out_index++] = (lr_combined >> 24) & 0xff;
                     out_data[out_index++] = (lr_combined & 0xff);
+                    out_data[out_index++] = (lr_combined >> 8) & 0xff;
                 }
             }
             break;
@@ -286,14 +286,14 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     r_sample = _sig_gen_get_sample(sg_r);
 
                     // l
-                    out_data[out_index++] = (l_sample & 0xff);
-                    out_data[out_index++] = (l_sample >> 8) & 0xff;
                     out_data[out_index++] = (l_sample >> 16) & 0xff;
+                    out_data[out_index++] = (l_sample >> 8) & 0xff;
+                    out_data[out_index++] = (l_sample & 0xff);
 
                     // r
-                    out_data[out_index++] = (r_sample & 0xff);
-                    out_data[out_index++] = (r_sample >> 8) & 0xff;
                     out_data[out_index++] = (r_sample >> 16) & 0xff;
+                    out_data[out_index++] = (r_sample >> 8) & 0xff;
+                    out_data[out_index++] = (r_sample & 0xff);
                 }
             }
             else { // BE
@@ -305,14 +305,14 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     r_sample = _sig_gen_get_sample(sg_r);
 
                     // l
-                    out_data[out_index++] = (l_sample >> 16) & 0xff;
-                    out_data[out_index++] = (l_sample >> 8) & 0xff;
                     out_data[out_index++] = (l_sample & 0xff);
+                    out_data[out_index++] = (l_sample >> 8) & 0xff;
+                    out_data[out_index++] = (l_sample >> 16) & 0xff;
 
                     // r
-                    out_data[out_index++] = (r_sample >> 16) & 0xff;
-                    out_data[out_index++] = (r_sample >> 8) & 0xff;
                     out_data[out_index++] = (r_sample & 0xff);
+                    out_data[out_index++] = (r_sample >> 8) & 0xff;
+                    out_data[out_index++] = (r_sample >> 16) & 0xff;
                 }
             }
             break;
