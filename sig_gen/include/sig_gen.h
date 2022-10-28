@@ -61,7 +61,7 @@ typedef struct {
     uint16_t sample_rate;
     bytes_per_sample_t bytes_per_sample;
     endianess_t endianess;
-    callback_enable_t cb_enable;
+    callback_enable_t enable_cb;
     uint16_t cb_interval_ms;
     lut_freq_e left_sine_freq;
     lut_freq_e right_sine_freq;

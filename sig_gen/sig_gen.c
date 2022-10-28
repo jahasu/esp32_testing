@@ -23,6 +23,11 @@ static void _timer_cb(void* arg)
     }
 }
 
+/**
+ * @brief Initialize a stereo signal generator global instance
+ * 
+ * @param stereo_config 
+ */
 void sig_gen_stereo_init(sig_gen_stereo_config_t* stereo_config)
 {
     sig_gen_config_t cfg = {
@@ -30,7 +35,7 @@ void sig_gen_stereo_init(sig_gen_stereo_config_t* stereo_config)
         .lut_freq = stereo_config->left_sine_freq,
         .sample_rate = stereo_config->sample_rate,
         .bytes_per_sample = stereo_config->bytes_per_sample,
-        .enable_cb = stereo_config->cb_enable,
+        .enable_cb = stereo_config->enable_cb,
         .cb_interval = stereo_config->cb_interval_ms,
         .endianess = stereo_config->endianess
     };
@@ -39,6 +44,14 @@ void sig_gen_stereo_init(sig_gen_stereo_config_t* stereo_config)
     sig_gen_init(&R_sig, &cfg);
 }
 
+/**
+ * @brief Read samples out to a user buffer
+ * 
+ * @param out_data User supplied buffer to hold audio data
+ * @param size Total size of audio data to get in bytes
+ * @param bytes_read Number of bytes read out to user buffer
+ * @return esp_err_t ESP_OK on successful output of audio data 
+ */
 esp_err_t sig_gen_stereo_read(uint8_t *out_data, size_t size, size_t *bytes_read)
 {
     if((!L_sig.initialized) | (!R_sig.initialized)) {
