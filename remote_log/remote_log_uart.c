@@ -1,4 +1,4 @@
-#include "remote_log_uart.h"
+//#include "remote_log_uart.h"
 
 static const char *TAG = "Remote Log, uart";
 

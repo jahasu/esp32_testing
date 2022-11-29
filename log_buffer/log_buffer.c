@@ -101,7 +101,7 @@ void _log_reg_buffer_print_task(void *arg)
     ESP_LOGI("","-------------------------------------------------");
     if(lr->incl_time) {
         for(int i=0;i<lr->size;i++) {
-            ESP_LOGI("","%s: \t 0x%.8X \t %d",(lr->buffer+i)->tag,(lr->buffer+i)->reg,(lr->buffer+i)->timestamp-last);
+            //ESP_LOGI("","%s: \t 0x%.8X \t %d",(lr->buffer+i)->tag,(lr->buffer+i)->reg,(lr->buffer+i)->timestamp-last);
             last = (lr->buffer+i)->timestamp;
         }
     }
